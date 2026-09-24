@@ -1,0 +1,64 @@
+{
+  "dealers": [
+    {
+      "id": "dsk-las-001",
+      "name": "Lagos AgroHub Ltd",
+      "state": "Lagos",
+      "lat": 6.5244,
+      "lng": 3.3792,
+      "pickup_window": "Mon-Sat 08:00-18:00",
+      "stock": [
+        { "product": "NPK 15-15-15 (50kg)", "sku": "NPK151515", "price_ngn": 18500, "qty": 120 },
+        { "product": "Urea fertiliser (50kg)", "sku": "UREA50", "price_ngn": 22000, "qty": 90 }
+      ]
+    },
+    {
+      "id": "dsk-oyo-001",
+      "name": "Oyo GreenFields Supplies",
+      "state": "Oyo",
+      "lat": 7.3775,
+      "lng": 3.9470,
+      "pickup_window": "Mon-Sat 08:00-17:00",
+      "stock": [
+        { "product": "NPK 15-15-15 (50kg)", "sku": "NPK151515", "price_ngn": 18000, "qty": 200 },
+        { "product": "Premium maize seed (10kg)", "sku": "MAZEED10", "price_ngn": 9800, "qty": 150 }
+      ]
+    },
+    {
+      "id": "dsk-kan-001",
+      "name": "Kano Bazaar Agro",
+      "state": "Kano",
+      "lat": 12.0022,
+      "lng": 8.5920,
+      "pickup_window": "Daily 09:00-19:00",
+      "stock": [
+        { "product": "Urea fertiliser (50kg)", "sku": "UREA50", "price_ngn": 20800, "qty": 80 },
+        { "product": "Kano maize seed (10kg)", "sku": "MAZEED10", "price_ngn": 9200, "qty": 110 }
+      ]
+    },
+    {
+      "id": "dsk-las-002",
+      "name": "Badagary AgroMart",
+      "state": "Lagos",
+      "lat": 6.4167,
+      "lng": 2.8833,
+      "pickup_window": "Mon-Sat 09:00-18:00",
+      "stock": [
+        { "product": "NPK 15-15-15 (50kg)", "sku": "NPK151515", "price_ngn": 19000, "qty": 60 },
+        { "product": "Lime / agricultural limestone", "sku": "LIME25", "price_ngn": 4500, "qty": 300 }
+      ]
+    },
+    {
+      "id": "dsk-oyo-002",
+      "name": "Ogbomoso Farm Inputs",
+      "state": "Oyo",
+      "lat": 8.1330,
+      "lng": 4.2580,
+      "pickup_window": "Mon-Fri 08:00-16:00",
+      "stock": [
+        { "product": "Premium maize seed (10kg)", "sku": "MAZEED10", "price_ngn": 10100, "qty": 70 },
+        { "product": "Liquid fertiliser 1L", "sku": "LIQFERT1", "price_ngn": 2400, "qty": 240 }
+      ]
+    }
+  ]
+}
