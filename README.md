@@ -8,21 +8,21 @@ Built for the AWS Communication Developer Services (CDS) Agentic AI Partner Hack
 
 ## Landing page
 
-The public site explains the farmer journey.
+The public site introduces HarvestOS and the farmer journey, from a first crop question to connected commerce. It explains how SMS, WhatsApp, messaging apps, and email share one continuous session, how local supply and financing are brought into reach, and how cooperatives and NGOs get a partner view of the work. Each section links through to the partner workspace so visitors can follow the story into the product.
 
 ![HarvestOS responsive landing page tour](docs/landing-tour.gif)
 
 ## Partner sign-in and onboarding
 
-Partner sign-in opens the operations console and guides the partner through onboarding.
+Partner sign-in opens the operations console after authenticating with workspace credentials. The page explains what partners can do once inside: a connected view of the conversations, local supply, and payment plans moving through their farmer network. A successful sign-in issues a signed eight-hour HttpOnly session, so the operator lands directly on the dashboard Overview to begin triaging journeys.
 
 ![HarvestOS partner sign-in tour](docs/auth-tour.gif)
 
 ## Product tour
 
-![HarvestOS partner operations: overview, conversations, and supply network](docs/product-tour.gif)
+The partner overview consolidates live network metrics — farmers reached, messages handled, crop issues assessed, and input orders — alongside real-time conversation activity. A conversations table surfaces each farmer journey and its stage across channels, while the dealer network and impact & finance panels show input supply and financing supported by the connected sessions. Sample data is used throughout the tour.
 
-*Illustrative interface tour; the values shown in the GIF are sample data.*
+![HarvestOS partner operations: overview, conversations, and supply network](docs/product-tour.gif)
 
 ## The farmer journey
 
