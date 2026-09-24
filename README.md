@@ -1,6 +1,16 @@
-<img src="frontend/landing/app/icon.svg" width="30" height="30" alt="HarvestOS leaf mark" /> [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE) [![Node.js 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json) [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](backend/pyproject.toml) [![TypeScript: strict](https://img.shields.io/badge/typescript-strict-informational.svg)](tsconfig.base.json) [![AWS infrastructure: CDK](https://img.shields.io/badge/infrastructure-AWS%20CDK-orange.svg)](infra/cdk)
+<p align="center">
+  <img src="frontend/landing/app/icon.svg" width="56" height="56" alt="HarvestOS leaf mark" />
+</p>
 
-# HarvestOS
+<h1 align="center">HarvestOS</h1>
+
+<p align="center">
+  [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+  [![Node.js 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+  [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](backend/pyproject.toml)
+  [![TypeScript: strict](https://img.shields.io/badge/typescript-strict-informational.svg)](tsconfig.base.json)
+  [![AWS infrastructure: CDK](https://img.shields.io/badge/infrastructure-AWS%20CDK-orange.svg)](infra/cdk)
+</p>
 
 **A farmer's text should open a path to a harvest.** HarvestOS connects crop guidance, local agricultural supply, and financing in one continuous conversation across low-bandwidth messaging channels.
 
