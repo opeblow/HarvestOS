@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+backend/.venv/
+
+# Builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+cdk.out/
+.mypy_cache/
+.pyre/
+.pyc/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+.coverage
+coverage.xml
+
+# Env & secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.tfstate
+*.tfstate.*
+cdk.context.json
+
+# Test coverage
+coverage/
+htmlcov/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.history/
+*.swp
+*.swo
+
+# Vercel/Netlify
+.vercel
+.netlify
