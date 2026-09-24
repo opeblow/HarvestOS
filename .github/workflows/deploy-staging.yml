@@ -1,0 +1,33 @@
+name: Deploy staging infrastructure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Set deployment account
+        shell: bash
+        run: echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
+      - name: Deploy CDK stack
+        run: npx cdk deploy --all --require-approval broadening
+        working-directory: infra/cdk
+        env:
+          HARVESTOS_AUTH_SECRET_ARN: ${{ secrets.HARVESTOS_AUTH_SECRET_ARN }}
