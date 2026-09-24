@@ -1,18 +1,24 @@
+<img src="frontend/landing/app/icon.svg" width="30" height="30" alt="HarvestOS leaf mark" /> [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE) [![Node.js 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json) [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](backend/pyproject.toml) [![TypeScript: strict](https://img.shields.io/badge/typescript-strict-informational.svg)](tsconfig.base.json) [![AWS infrastructure: CDK](https://img.shields.io/badge/infrastructure-AWS%20CDK-orange.svg)](infra/cdk)
+
 # HarvestOS
 
 **A farmer's text should open a path to a harvest.** HarvestOS connects crop guidance, local agricultural supply, and financing in one continuous conversation across low-bandwidth messaging channels.
 
 Built for the AWS Communication Developer Services (CDS) Agentic AI Partner Hackathon. The repository contains a runnable local journey and an AWS infrastructure foundation. Channel and cloud integrations require account setup; see [what works today](#implementation-status) before presenting a live integration as available.
 
+## Landing page
+
+The public site explains the farmer journey.
+
+![HarvestOS responsive landing page tour](docs/landing-tour.gif)
+
+## Partner sign-in and onboarding
+
+Partner sign-in opens the operations console and guides the partner through onboarding.
+
+![HarvestOS partner sign-in tour](docs/auth-tour.gif)
+
 ## Product tour
-
-The public site explains the farmer journey, partner sign-in opens the operations console, and the product tour shows the connected workflow.
-
-| Public landing page | Partner sign-in |
-| --- | --- |
-| ![HarvestOS responsive landing page tour](docs/landing-tour.gif) | ![HarvestOS partner sign-in tour](docs/auth-tour.gif) |
-
-The browser favicon is the HarvestOS leaf mark: ![HarvestOS favicon](frontend/landing/app/icon.svg)
 
 ![HarvestOS partner operations: overview, conversations, and supply network](docs/product-tour.gif)
 
@@ -67,6 +73,38 @@ SMS / WhatsApp / RCS / Email
 ```
 
 The channel layer normalizes inbound messages; the journey/orchestrator owns the next action; agent modules handle specialist decisions; the session store preserves channel continuity; the dashboard reads operational aggregates. Full boundary, trust, and deployment notes are in [docs/architecture.md](docs/architecture.md) and [docs/system-design.md](docs/system-design.md).
+
+## Repository layout
+
+```text
+HarvestOS/
+├── .github/
+│   └── workflows/             # CI (tests + lint) and staging deployment
+├── backend/                   # FastAPI services
+│   ├── app/
+│   │   ├── agents/            # diagnosis, commerce, finance, logistics + orchestrator
+│   │   ├── channels/          # SMS/RCS, WhatsApp, email channel adapters
+│   │   ├── routers/           # webhook ingestion + dashboard API
+│   │   ├── services/          # journey orchestration service
+│   │   ├── shared/            # cross-agent types, channel policy, session store
+│   │   ├── data/              # seeded dealer network
+│   │   ├── auth.py            # dashboard session / bearer auth
+│   │   ├── config.py          # environment-driven settings
+│   │   └── main.py            # FastAPI entrypoint
+│   ├── tests/                 # pytest suite
+│   ├── Dockerfile
+│   └── pyproject.toml
+├── docs/                      # architecture, system design, demo script, tour GIFs
+├── frontend/
+│   ├── landing/               # public marketing site (Next.js)
+│   └── dashboard/             # partner operations console (Next.js)
+├── infra/
+│   └── cdk/                   # AWS CDK: storage, compute, observability
+├── package.json               # npm workspace manifest
+├── tsconfig.base.json
+├── LICENSE
+└── README.md
+```
 
 ## Implementation status
 
