@@ -1,0 +1,31 @@
+{
+  "name": "harvestos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The agentic commerce layer for Africa's smallholder farmers — AWS CDS Agentic AI Hackathon",
+  "workspaces": [
+    "infra/cdk",
+    "frontend/landing",
+    "frontend/dashboard"
+  ],
+  "scripts": {
+    "backend:install": "cd backend && pip install -r requirements-dev.txt",
+    "backend:dev": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "backend:test": "cd backend && python -m pytest -q",
+    "backend:lint": "cd backend && ruff check . && ruff format --check .",
+    "frontend:dev": "npm run dev --workspace frontend/landing",
+    "frontend:build": "npm run build --workspace frontend/landing",
+    "dashboard:dev": "npm run dev --workspace frontend/dashboard",
+    "dashboard:build": "npm run build --workspace frontend/dashboard",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "infra:synth": "npm run synth --workspace infra/cdk",
+    "infra:deploy": "npm run deploy --workspace infra/cdk",
+    "infra:destroy": "npm run destroy --workspace infra/cdk",
+    "infra:test": "npm run test --workspace infra/cdk",
+    "test": "npm run backend:test && npm run infra:test",
+    "lint": "npm run backend:lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
