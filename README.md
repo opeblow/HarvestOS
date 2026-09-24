@@ -5,11 +5,11 @@
 <h1 align="center">HarvestOS</h1>
 
 <p align="center">
-  [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-  [![Node.js 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
-  [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](backend/pyproject.toml)
-  [![TypeScript: strict](https://img.shields.io/badge/typescript-strict-informational.svg)](tsconfig.base.json)
-  [![AWS infrastructure: CDK](https://img.shields.io/badge/infrastructure-AWS%20CDK-orange.svg)](infra/cdk)
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT" /></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node.js 20+" /></a>
+  <a href="backend/pyproject.toml"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" /></a>
+  <a href="tsconfig.base.json"><img src="https://img.shields.io/badge/typescript-strict-informational.svg" alt="TypeScript: strict" /></a>
+  <a href="infra/cdk"><img src="https://img.shields.io/badge/infrastructure-AWS%20CDK-orange.svg" alt="AWS infrastructure: CDK" /></a>
 </p>
 
 **A farmer's text should open a path to a harvest.** HarvestOS connects crop guidance, local agricultural supply, and financing in one continuous conversation across low-bandwidth messaging channels.
