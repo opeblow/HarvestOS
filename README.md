@@ -20,11 +20,19 @@ Built for the AWS Communication Developer Services (CDS) Agentic AI Partner Hack
 
 The public site introduces HarvestOS and the farmer journey, from a first crop question to connected commerce. It explains how every update is captured in a durable in-app inbox, how SMS, WhatsApp, rich messaging, and email can be switched on as optional adapters, how local supply and financing are brought into reach, and how cooperatives and NGOs get a partner view of the work. Each section links through to the partner workspace so visitors can follow the story into the product.
 
-The previous screen-recording GIFs were removed because they showed external channels that are not enabled in this environment. Re-record the landing, sign-in, and product tours once the relevant adapters are configured.
+![Landing page](docs/gifs/landing.gif)
 
 ## Partner sign-in and onboarding
 
 Partner sign-in opens the operations console after authenticating with workspace credentials. The page explains what partners can do once inside: a connected view of the conversations, local supply, and payment plans moving through their farmer network. A successful sign-in issues a signed eight-hour HttpOnly session, so the operator lands directly on the dashboard Overview to begin triaging journeys.
+
+![Partner sign-in and onboarding](docs/gifs/onboarding.gif)
+
+## Authentication
+
+Partners reach the sign-in screen at `/login` and authenticate with workspace credentials. The dashboard signs the session and issues a HttpOnly cookie that expires after eight hours, and the API verifies that signed session before serving dashboard endpoints in deployed mode. The local demo account is `partner@harvestos.local` / `HarvestDemo!2026`, rejected in production. Configure `HARVESTOS_AUTH_EMAIL`, `HARVESTOS_AUTH_PASSWORD`, and `HARVESTOS_SESSION_SECRET` in the dashboard hosting environment and use the same session secret for the backend; production must use a unique high-entropy secret, HTTPS, and rate limiting at the edge.
+
+![Authentication](docs/gifs/auth.gif)
 
 ## Product tour
 

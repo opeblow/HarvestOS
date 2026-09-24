@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+    if (pathname === "/login") return NextResponse.next();
     const login = new URL("/login", request.url);
     login.searchParams.set("next", `${pathname}${search}`);
     return NextResponse.redirect(login);
