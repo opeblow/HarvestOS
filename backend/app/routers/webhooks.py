@@ -97,9 +97,11 @@ def _extract_whatsapp_messages(payload: dict) -> list[Message]:
 
 
 def _resolve_media(media_id: str) -> str:
-    if not settings.storage_is_aws:
-        if not media_id:
-            return ""
+    if not media_id:
+        return ""
+    # Downloading WhatsApp media requires the optional EUM Social provider and S3
+    # asset storage. Without them the journey still records a local reference.
+    if not settings.whatsapp_enabled or not settings.asset_storage_is_s3:
         return f"media://{media_id}"
     try:
         client = boto3.client("socialmessaging", region_name=settings.region)

@@ -3,34 +3,46 @@
 ## System boundaries
 
 ```text
-External channels
+External channels (optional adapters)
   └─ channel adapters (routers/webhooks.py, channels/)
       └─ normalized Message
           └─ journey service
               ├─ orchestrator and specialist agents
               ├─ session store (memory or DynamoDB)
-              └─ outbound channel registry
+              └─ notification service
+                  ├─ in-app inbox (always)
+                  └─ enabled external providers (optional)
 
-Partner browser ── dashboard API (routers/dashboard.py) ── session store + dealer seed
-CDK app ── storage / compute / observability resources
+Partner browser ── dashboard API (routers/dashboard.py) ── session store + inbox + dealer seed
+CDK app ── storage / compute / observability resources (SES + S3 optional)
 ```
 
-Channel adapters translate provider payloads into the shared message model and dispatch outbound messages. Agent modules route intent and update journey state. The session store is the local system of record for conversation continuity. Dashboard endpoints aggregate that state and mask phone numbers before returning rows.
+Channel adapters translate provider payloads into the shared message model. The notification service always persists every user-facing update to the in-app inbox and only attempts external delivery through providers that are explicitly enabled. Agent modules route intent and update journey state. The session store is the local system of record for conversation continuity. Dashboard endpoints aggregate that state and mask phone numbers before returning rows.
+
+## Optional adapters and the core
+
+The product must run with no external messaging or object storage. Core delivery is the in-app inbox (`NOTIFICATION_PROVIDER=in_app`), and the external providers `EMAIL_PROVIDER`, `SMS_PROVIDER`, and `WHATSAPP_PROVIDER` default to `disabled`; `ASSET_STORAGE` defaults to `local`. `validate_settings()` enforces this at startup:
+
+- Core settings (`STORAGE`, `NOTIFICATION_PROVIDER`) are always validated.
+- Optional providers are validated only when enabled. `EMAIL_PROVIDER=ses` requires `SES_FROM_ADDRESS`, `SMS_PROVIDER=eum` requires `SMS_ORIGINATION_IDENTITY`, `WHATSAPP_PROVIDER=eum` requires `WHATSAPP_PHONE_NUMBER_ID`, and `ASSET_STORAGE=s3` requires `ASSET_BUCKET`.
+- A disabled channel resolves to a `DisabledAdapter`/`DisabledNotificationProvider` that raises a clear `ProviderError` if used directly, so a disabled channel is never mistaken for a delivered message.
 
 ## Data flow and ownership
 
 - **Identity:** phone number joins local channel turns to a session. Production should use a keyed, tenant-aware identity mapping rather than exposing raw numbers as database keys.
 - **Conversation:** inbound/outbound turns, channel history, journey stage, diagnosis, quote, reservation, and loan plan live on the session.
+- **Notifications:** the in-app inbox is the durable record of every update, with category, entity references, and an optional external-delivery flag. Dashboard endpoints expose and mark these read.
 - **Dealer data:** `backend/app/data/dealers.json` provides repeatable sample supply. Treat it as seed data, not a verified live inventory feed.
-- **Media/documents:** AWS storage defines an encrypted object bucket; production media access needs private objects, bounded signed URLs, retention policy, and malware/content validation.
-- **Dashboard:** read-only endpoints expose aggregate totals and masked conversation rows. The Next.js console protects UI and proxy routes with a signed single-partner session; FastAPI validates the same token in deployed mode. Tenant scoping, backend pagination, and audit events remain necessary before multi-partner deployment.
+- **Media/documents:** local asset storage is the default (`ASSET_LOCAL_DIR`, git-ignored). When S3 is enabled, an encrypted object bucket is used; production media access needs private objects, bounded signed URLs, retention policy, and malware/content validation.
+- **Dashboard:** read-only endpoints expose aggregate totals, masked conversation rows, and the notification inbox. The Next.js console protects UI and proxy routes with a signed single-partner session; FastAPI validates the same token in deployed mode. Tenant scoping, backend pagination, and audit events remain necessary before multi-partner deployment.
 
 ## Runtime modes
 
 | Mode | Persistence | Agents | Outbound messages | Use |
 | --- | --- | --- | --- | --- |
-| Local default | In-memory | Rule-based | Logged/simulated | Development and scripted demo |
-| AWS configured | DynamoDB plus S3 | Current configured backend | AWS SDK adapters | Integration work; verify each service and account prerequisite |
+| Local default | In-memory sessions, local assets | Rule-based | In-app inbox; external channels disabled | Development and scripted demo |
+| AWS core | DynamoDB sessions, local assets | Current configured backend | In-app inbox; external channels disabled | Integration work without messaging services |
+| AWS with adapters | DynamoDB plus optional S3 | Current configured backend | In-app inbox plus enabled SES/SMS/WhatsApp adapters | Full integration; verify each service and account prerequisite |
 
 The current repository does not yet provision or prove the full PRD topology of Bedrock AgentCore, Cognito, verified CDS channels, or an asynchronous queue with DLQ. The existing CDK stack should be reviewed against account-specific service support and the deployment plan before use.
 

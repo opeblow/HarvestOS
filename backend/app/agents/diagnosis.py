@@ -3,12 +3,10 @@ from __future__ import annotations
 import urllib.request
 from urllib.parse import urlparse
 
-import boto3
-
 from app.agents.base import Agent
 from app.agents.llm import LLMClient, LLMFactory
-from app.config import settings
 from app.shared import ConversationTurn, DiagnosisResult, Escalation, Session
+from app.storage import load_ref
 
 SYSTEM_PROMPT = (
     "You are HarvestOS Diagnosis Agent, an agronomist for smallholder maize farmers "
@@ -52,8 +50,8 @@ class DiagnosisAgent(Agent):
 
         reply = (
             "Thanks for reaching out to HarvestOS. To diagnose your maize properly I need a "
-            "photo of the affected leaves. Open the WhatsApp link we just texted you and send a "
-            "clear close-up picture — I'll take it from there. 👨‍🌾"
+            "photo of the affected leaves. Send a clear close-up picture on a connected channel "
+            "(for example WhatsApp, when it is enabled) and I'll take it from there. 👨‍🌾"
         )
         return ConversationTurn(
             intent="diagnosis",
@@ -70,14 +68,10 @@ class DiagnosisAgent(Agent):
     @staticmethod
     def _fetch_image(media_url: str) -> bytes:
         parsed = urlparse(media_url)
-        if parsed.scheme == "s3" and parsed.netloc and parsed.path.strip("/"):
-            response = boto3.client("s3", region_name=settings.region).get_object(
-                Bucket=parsed.netloc,
-                Key=parsed.path.lstrip("/"),
-            )
-            return response["Body"].read()
+        if parsed.scheme in {"s3", "local"}:
+            return load_ref(media_url)
         if parsed.scheme != "https":
-            raise ValueError("crop image must be an HTTPS URL or a private S3 object")
+            raise ValueError("crop image must be an HTTPS URL or a stored asset reference")
         with urllib.request.urlopen(media_url, timeout=10) as resp:
             return resp.read()
 

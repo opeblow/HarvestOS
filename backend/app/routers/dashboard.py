@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.agents.commerce import _load_dealers
 from app.auth import require_dashboard_session
+from app.notifications.service import get_notification_service
 from app.services.journey import get_journey
 from app.shared import Session
 
@@ -50,6 +51,7 @@ def stats() -> dict:
         "quotes": sum(1 for s in sessions if s.state.get("quote")),
         "loans_issued": sum(1 for s in sessions if s.state.get("loan_plan")),
         "reservations": sum(1 for s in sessions if s.state.get("order_status")),
+        "notifications": len(get_notification_service().list(limit=1000)),
     }
 
 

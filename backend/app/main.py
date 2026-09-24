@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
-from app.config import settings
-from app.routers import dashboard, webhooks
+from app.config import settings, validate_settings
+from app.routers import dashboard, notifications, webhooks
 from app.routers import router as health_router
 
 SENSITIVE_KEYS = {"text", "mediaurl", "phonenumber", "body", "message", "from", "recipient"}
@@ -30,6 +30,8 @@ def _before_send(event: dict, hint: dict) -> dict | None:
 
 
 def _init_sentry() -> None:
+    if settings.app_env.lower() == "test":
+        return
     dsn = settings.sentry_dsn or os.getenv("SENTRY_DSN", "")
     if not dsn:
         return
@@ -49,6 +51,8 @@ def _init_sentry() -> None:
 
 _init_sentry()
 
+validate_settings()
+
 app = FastAPI(title="HarvestOS API", version="0.1.0")
 
 app.add_middleware(
@@ -61,3 +65,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(webhooks.router)
 app.include_router(dashboard.router)
+app.include_router(notifications.router)

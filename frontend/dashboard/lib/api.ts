@@ -8,6 +8,7 @@ export type Stats = {
   quotes: number;
   loans_issued: number;
   reservations: number;
+  notifications: number;
 };
 
 export type ConversationRow = {
@@ -43,8 +44,28 @@ export type LoanHealth = {
   portfolio_ngn: number;
 };
 
+export type NotificationItem = {
+  id: string;
+  recipient: string;
+  channel: string;
+  category: string;
+  title: string;
+  body: string;
+  entity: Record<string, unknown>;
+  created_ts: string;
+  read_ts: string | null;
+  delivered_externally: boolean;
+  external_provider: string;
+};
+
+export type NotificationPage = {
+  items: NotificationItem[];
+  unread: number;
+  total: number;
+};
+
 async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
-  const resp = await fetch(`${API_BASE}${path}`, {
+  const resp = await fetch(path, {
     signal,
     headers: { Accept: "application/json" },
   });
@@ -68,4 +89,28 @@ export function fetchDealers(signal: AbortSignal) {
 
 export function fetchLoanHealth(signal: AbortSignal) {
   return getJson<LoanHealth>(`${API_BASE}/loan-health`, signal);
+}
+
+export function fetchNotifications(limit: number, signal: AbortSignal) {
+  return getJson<NotificationPage>(`${API_BASE}/notifications?limit=${limit}`, signal);
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  const resp = await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/read`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+  });
+  if (!resp.ok) {
+    throw new Error(`mark read returned ${resp.status}`);
+  }
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const resp = await fetch(`${API_BASE}/notifications/read-all`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+  });
+  if (!resp.ok) {
+    throw new Error(`read all returned ${resp.status}`);
+  }
 }

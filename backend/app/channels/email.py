@@ -56,7 +56,8 @@ class SESEmailAdapter(ChannelAdapter):
             subject = "Your HarvestOS receipt"
         if message.email_type == "agreement":
             subject = "Your HarvestOS loan agreement"
-        raw = self._build_mime(subject, message)
+        attachments = self._attachments_for(message)
+        raw = self._build_mime(subject, message, attachments)
         try:
             self._client.send_email(
                 FromEmailAddress=settings.ses_from_address,
@@ -73,7 +74,21 @@ class SESEmailAdapter(ChannelAdapter):
         )
 
     @staticmethod
-    def _build_mime(subject: str, message: OutboundMessage) -> bytes:
+    def _attachments_for(message: OutboundMessage) -> list[dict]:
+        attachments = list(message.attachments)
+        if message.email_type == "agreement" and not attachments:
+            reference = "HS-LOAN-DEMO"
+            pdf = build_receipt_pdf(
+                reference=reference,
+                product="NPK 15-15-15 (50kg)",
+                amount_ngn=18500.0,
+                recipient=message.to,
+            )
+            attachments.append({"name": f"{reference}.pdf", "content": pdf})
+        return attachments
+
+    @staticmethod
+    def _build_mime(subject: str, message: OutboundMessage, attachments: list[dict]) -> bytes:
         outer = MIMEMultipart()
         outer["Subject"] = subject
         outer["From"] = settings.ses_from_address
@@ -81,7 +96,7 @@ class SESEmailAdapter(ChannelAdapter):
         outer["Date"] = formatdate(localtime=True)
         body = _pdf_safe(message.text or "Your HarvestOS update.")
         outer.attach(MIMEText(body, "plain", "utf-8"))
-        for attachment in message.attachments:
+        for attachment in attachments:
             part = MIMEApplication(attachment.get("content", b""), _subtype="pdf")
             filename = attachment.get("name", "doc.pdf")
             part.add_header("Content-Disposition", "attachment", filename=filename)

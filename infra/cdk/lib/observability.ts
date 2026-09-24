@@ -10,22 +10,27 @@ export interface ObservabilityProps {
   region: string;
   /** SES identity to verify for sending (email or domain). */
   sesIdentity: string;
+  /** Email (SES) is an optional adapter; the identity is created only when enabled. */
+  enableEmail: boolean;
   /** Monthly cost ceiling in USD. */
   monthlyBudgetUsd: number;
   alarmEmail: string;
 }
 
 /**
- * SES sending identity, a CloudWatch dashboard (traffic per channel would be
- * populated by the backend's structured logs), and a hard budget alarm.
+ * Optional SES sending identity, a CloudWatch dashboard (traffic per channel
+ * would be populated by the backend's structured logs), and a hard budget
+ * alarm. The dashboard and budget alarm are core and always created.
  */
 export class Observability extends Construct {
   constructor(scope: Construct, id: string, props: ObservabilityProps) {
     super(scope, id);
 
-    new ses.EmailIdentity(this, "SesIdentity", {
-      identity: { value: props.sesIdentity },
-    });
+    if (props.enableEmail) {
+      new ses.EmailIdentity(this, "SesIdentity", {
+        identity: { value: props.sesIdentity },
+      });
+    }
 
     const dashboard = new cloudwatch.Dashboard(this, "Dashboard", {
       dashboardName: "HarvestOS",

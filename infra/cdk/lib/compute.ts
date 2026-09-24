@@ -11,12 +11,15 @@ export interface ComputeProps {
   storage: Storage;
   region: string;
   sesFromAddress: string;
+  /** Email (SES) is an optional adapter; disabled by default. */
+  enableEmail: boolean;
 }
 
 /**
- * ECS Fargate service running the FastAPI backend behind an ALB. Inbound
- * webhooks (SMS / WhatsApp / SES) and the read-only dashboard API all land
- * here; there is no separate lambda per channel for the MVP.
+ * ECS Fargate service running the FastAPI backend behind an ALB. The core app
+ * (in-app notifications, local assets, DynamoDB sessions) needs none of the
+ * optional AWS messaging services; SES and S3 grants/env are wired only when
+ * those adapters are explicitly enabled.
  */
 export class Compute extends Construct {
   readonly loadBalancer: elbv2.ApplicationLoadBalancer;
@@ -40,15 +43,22 @@ export class Compute extends Construct {
     });
 
     props.storage.table.grantReadWriteData(taskDefinition.taskRole);
-    props.storage.assetBucket.grantReadWrite(taskDefinition.taskRole);
-    taskDefinition.addToTaskRolePolicy(
-      new cdk.aws_iam.PolicyStatement({
-        actions: ["ses:SendEmail", "ses:SendRawEmail", "sesv2:SendEmail"],
-        resources: [
-          `arn:aws:ses:${props.region}:${cdk.Stack.of(this).account}:identity/${props.sesFromAddress}`,
-        ],
-      }),
-    );
+
+    const assetBucket = props.storage.assetBucket;
+    if (assetBucket) {
+      assetBucket.grantReadWrite(taskDefinition.taskRole);
+    }
+
+    if (props.enableEmail) {
+      taskDefinition.addToTaskRolePolicy(
+        new cdk.aws_iam.PolicyStatement({
+          actions: ["ses:SendEmail", "ses:SendRawEmail", "sesv2:SendEmail"],
+          resources: [
+            `arn:aws:ses:${props.region}:${cdk.Stack.of(this).account}:identity/${props.sesFromAddress}`,
+          ],
+        }),
+      );
+    }
     if (process.env.HARVESTOS_AGENT_BACKEND === "bedrock") {
       taskDefinition.addToTaskRolePolicy(
         new cdk.aws_iam.PolicyStatement({
@@ -64,25 +74,36 @@ export class Compute extends Construct {
       file: "Dockerfile",
     });
 
+    const environment: Record<string, string> = {
+      APP_ENV: "prod",
+      STORAGE: "aws",
+      AGENT_BACKEND: process.env.HARVESTOS_AGENT_BACKEND ?? "rule",
+      AWS_DEFAULT_REGION: props.region,
+      TABLE_NAME: props.storage.table.tableName,
+      NOTIFICATION_PROVIDER: "in_app",
+      EMAIL_PROVIDER: props.enableEmail ? "ses" : "disabled",
+      SMS_PROVIDER: process.env.SMS_PROVIDER ?? "disabled",
+      WHATSAPP_PROVIDER: process.env.WHATSAPP_PROVIDER ?? "disabled",
+      ASSET_STORAGE: assetBucket ? "s3" : "local",
+      SENTRY_DSN: process.env.SENTRY_DSN ?? "",
+      PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? "",
+      PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY ?? "",
+      SMS_ORIGINATION_IDENTITY: process.env.SMS_ORIGINATION_IDENTITY ?? "",
+      WHATSAPP_LINKED_ACCOUNT_ID: process.env.WHATSAPP_LINKED_ACCOUNT_ID ?? "",
+      WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",
+    };
+    if (assetBucket) {
+      environment.ASSET_BUCKET = assetBucket.bucketName;
+    }
+    if (props.enableEmail) {
+      environment.SES_FROM_ADDRESS = props.sesFromAddress;
+    }
+
     const container = taskDefinition.addContainer("Web", {
       image,
       memoryLimitMiB: 1024,
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "harvestos-web" }),
-      environment: {
-        APP_ENV: "prod",
-        STORAGE: "aws",
-        AGENT_BACKEND: process.env.HARVESTOS_AGENT_BACKEND ?? "rule",
-        AWS_DEFAULT_REGION: props.region,
-        TABLE_NAME: props.storage.table.tableName,
-        ASSET_BUCKET: props.storage.assetBucket.bucketName,
-        SES_FROM_ADDRESS: props.sesFromAddress,
-        SENTRY_DSN: process.env.SENTRY_DSN ?? "",
-        PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? "",
-        PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY ?? "",
-        SMS_ORIGINATION_IDENTITY: process.env.SMS_ORIGINATION_IDENTITY ?? "",
-        WHATSAPP_LINKED_ACCOUNT_ID: process.env.WHATSAPP_LINKED_ACCOUNT_ID ?? "",
-        WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID ?? "",
-      },
+      environment,
     });
     const authSecretArn = process.env.HARVESTOS_AUTH_SECRET_ARN;
     if (authSecretArn) {

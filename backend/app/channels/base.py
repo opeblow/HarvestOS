@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.shared import OutboundMessage, SendReceipt
+from app.shared import OutboundMessage, ProviderError, SendReceipt
 
 from ..config import settings
 
@@ -12,6 +12,25 @@ class ChannelAdapter(ABC):
 
     @abstractmethod
     def send(self, message: OutboundMessage) -> SendReceipt: ...
+
+
+class DisabledAdapter(ChannelAdapter):
+    """Adapter placeholder for an external channel that is not enabled.
+
+    Sending raises a clear configuration error so a disabled channel can never
+    be mistaken for a delivered message.
+    """
+
+    provider = "disabled"
+
+    def __init__(self, channel: str) -> None:
+        self._channel = channel
+
+    def send(self, message: OutboundMessage) -> SendReceipt:
+        raise ProviderError(
+            f"{self._channel} channel is disabled; enable its provider and configuration "
+            "to send external messages"
+        )
 
 
 class LoggingAdapter(ChannelAdapter):

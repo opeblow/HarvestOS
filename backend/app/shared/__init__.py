@@ -13,6 +13,17 @@ def utcnow() -> str:
     return datetime.now(UTC).isoformat()
 
 
+class ProviderError(RuntimeError):
+    """Raised when an optional external provider is misconfigured or unavailable."""
+
+
+CATEGORY_DIAGNOSIS = "diagnosis"
+CATEGORY_COMMERCE = "commerce"
+CATEGORY_FINANCE = "finance"
+CATEGORY_LOGISTICS = "logistics"
+CATEGORY_SYSTEM = "system"
+
+
 class Message(BaseModel):
     channel: str
     from_number: str
@@ -108,6 +119,8 @@ class OutboundMessage(BaseModel):
     media_url: str = ""
     email_type: str = "text"
     attachments: list[dict[str, Any]] = Field(default_factory=list)
+    category: str = "system"
+    entity: dict[str, Any] = Field(default_factory=dict)
 
 
 class SendReceipt(BaseModel):

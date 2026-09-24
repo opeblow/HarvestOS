@@ -82,11 +82,13 @@ Browser
  ├─ CDN/static host: frontend/landing (port 3000 locally)
  └─ HTTPS host: frontend/dashboard (port 3001 locally)
        ├─ /api/auth/*           sign in / sign out
-       ├─ /api/dashboard/*      authenticated data proxy
+       ├─ /api/dashboard/*      authenticated data proxy (stats, conversations,
+       │                        dealers, loan-health, notifications)
        └─ FastAPI service       /api/* validates signed bearer in prod
              ├─ DynamoDB         persistent session state (AWS mode)
-             ├─ S3               private crop media and documents
-             └─ channel adapters SMS / WhatsApp / RCS / SES
+             ├─ in-app inbox     durable notifications (always available)
+             ├─ local assets     .harvestos-assets/ (default)
+             └─ optional adapters S3 asset bucket / SMS / WhatsApp / SES
 ```
 
-The existing CDK stack deploys the API/storage foundation only. Landing and dashboard hosting remain independent deployments. The static landing host must set security headers at its CDN. The partner dashboard needs server runtime support for middleware and API routes; do not export it as a static site.
+The dashboard's notification endpoints (`GET /api/notifications`, `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all`) proxy to the FastAPI notification service and back the console's in-app inbox and unread badge. The existing CDK stack deploys the API/storage foundation only; the S3 bucket and SES identity are optional and off by default. Landing and dashboard hosting remain independent deployments. The static landing host must set security headers at its CDN. The partner dashboard needs server runtime support for middleware and API routes; do not export it as a static site.

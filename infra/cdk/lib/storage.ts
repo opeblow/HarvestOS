@@ -7,16 +7,19 @@ import { Construct } from "constructs";
 export interface StorageProps {
   tableName: string;
   assetBucketName: string;
+  /** S3 is an optional adapter; the core app runs with local asset storage. */
+  enableAssetBucket?: boolean;
 }
 
 /**
  * Single-table DynamoDB design keyed by `phoneNumber` (identity) + `sk`
- * (session/message sub-keys). Photos and generated PDFs live in S3 under
- * `photos/` and `pdfs/` prefixes, served only through signed URLs.
+ * (session/message sub-keys). This is the core session store and is always
+ * provisioned. The S3 asset bucket for photos and generated PDFs is optional
+ * and only created when explicitly enabled.
  */
 export class Storage extends Construct {
   readonly table: dynamodb.Table;
-  readonly assetBucket: s3.Bucket;
+  readonly assetBucket?: s3.Bucket;
   readonly key: kms.Key;
 
   constructor(scope: Construct, id: string, props: StorageProps) {
@@ -54,22 +57,23 @@ export class Storage extends Construct {
       sortKey: { name: "updatedTs", type: dynamodb.AttributeType.STRING },
     });
 
-    this.assetBucket = new s3.Bucket(this, "AssetsBucket", {
-      bucketName: props.assetBucketName,
-      encryption: s3.BucketEncryption.KMS,
-      encryptionKey: this.key,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      enforceSSL: true,
-      versioned: true,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-      lifecycleRules: [
-        {
-          id: "expire-assets",
-          enabled: true,
-          expiration: cdk.Duration.days(90),
-        },
-      ],
-    });
-
+    if (props.enableAssetBucket) {
+      this.assetBucket = new s3.Bucket(this, "AssetsBucket", {
+        bucketName: props.assetBucketName,
+        encryption: s3.BucketEncryption.KMS,
+        encryptionKey: this.key,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+        enforceSSL: true,
+        versioned: true,
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+        lifecycleRules: [
+          {
+            id: "expire-assets",
+            enabled: true,
+            expiration: cdk.Duration.days(90),
+          },
+        ],
+      });
+    }
   }
 }

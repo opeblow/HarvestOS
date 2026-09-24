@@ -9,6 +9,11 @@ from app.agents.finance import FinanceAgent
 from app.agents.logistics import LogisticsAgent
 from app.config import CHANNEL_EMAIL, CHANNEL_RCS, CHANNEL_WHATSAPP
 from app.shared import (
+    CATEGORY_COMMERCE,
+    CATEGORY_DIAGNOSIS,
+    CATEGORY_FINANCE,
+    CATEGORY_LOGISTICS,
+    CATEGORY_SYSTEM,
     ConversationTurn,
     JourneyPlan,
     Message,
@@ -19,6 +24,15 @@ from app.shared import (
 KYC_NAME_RE = re.compile(r"NAME\s+(.+?)(?:\s+STATE\s+|\s*$)", re.IGNORECASE)
 KYC_STATE_RE = re.compile(r"STATE\s+([A-Za-z\s'-]+)", re.IGNORECASE)
 RESERVE_RE = re.compile(r"RESERVE\s+(\S+)", re.IGNORECASE)
+
+CATEGORY_BY_INTENT = {
+    "diagnosis": CATEGORY_DIAGNOSIS,
+    "commerce": CATEGORY_COMMERCE,
+    "finance": CATEGORY_FINANCE,
+    "logistics": CATEGORY_LOGISTICS,
+    "reserve": CATEGORY_LOGISTICS,
+    "chitchat": CATEGORY_SYSTEM,
+}
 
 
 class Orchestrator:
@@ -93,12 +107,16 @@ class Orchestrator:
     ) -> JourneyPlan:
         outbound: list[OutboundMessage] = []
         for turn in trace:
+            category = CATEGORY_BY_INTENT.get(turn.intent, CATEGORY_SYSTEM)
+            entity = self._entity(turn)
             if turn.reply_text:
                 outbound.append(
                     OutboundMessage(
                         channel=current_channel,
                         to=session.phone_number,
                         text=turn.reply_text,
+                        category=category,
+                        entity=entity,
                     )
                 )
             if not turn.escalation:
@@ -106,13 +124,20 @@ class Orchestrator:
             esc = turn.escalation
             payload = esc.payload or {}
             if esc.channel == CHANNEL_WHATSAPP:
-                link = "https://wa.me/[PENDING_NUMBER]?text=Hi%20HarvestOS"
                 text = (
-                    f"Send a clear close-up photo of the affected leaves: {link} "
-                    "(message the same number on WhatsApp)"
+                    "A clear close-up photo of the affected leaves will make this diagnosis "
+                    "exact. Photo upload needs a connected channel such as WhatsApp; if that "
+                    "channel is not enabled yet, reply and we will continue with the details "
+                    "you have shared."
                 )
                 outbound.append(
-                    OutboundMessage(channel=CHANNEL_WHATSAPP, to=session.phone_number, text=text)
+                    OutboundMessage(
+                        channel=CHANNEL_WHATSAPP,
+                        to=session.phone_number,
+                        text=text,
+                        category=CATEGORY_DIAGNOSIS,
+                        entity=entity,
+                    )
                 )
             elif esc.channel == CHANNEL_RCS or turn.card or payload.get("card"):
                 outbound.append(
@@ -121,6 +146,8 @@ class Orchestrator:
                         to=session.phone_number,
                         text=turn.reply_text,
                         card=turn.card,
+                        category=CATEGORY_COMMERCE,
+                        entity=entity,
                     )
                 )
             elif esc.channel == CHANNEL_EMAIL:
@@ -133,6 +160,8 @@ class Orchestrator:
                         to=session.phone_number,
                         text=turn.reply_text,
                         email_type=email_type,
+                        category=CATEGORY_FINANCE if email_type == "agreement" else CATEGORY_SYSTEM,
+                        entity=entity,
                     )
                 )
             elif esc.channel != current_channel:
@@ -141,9 +170,27 @@ class Orchestrator:
                         channel=esc.channel,
                         to=session.phone_number,
                         text=turn.reply_text,
+                        category=category,
+                        entity=entity,
                     )
                 )
         return JourneyPlan(outbound=outbound, session=session, trace=trace)
+
+    @staticmethod
+    def _entity(turn: ConversationTurn) -> dict:
+        entity: dict = {"intent": turn.intent}
+        diagnosis = turn.data.get("diagnosis")
+        if isinstance(diagnosis, dict) and diagnosis.get("issue"):
+            entity["issue"] = diagnosis["issue"]
+        loan = turn.data.get("loan_plan")
+        if isinstance(loan, dict) and loan.get("agreement_id"):
+            entity["agreement_id"] = loan["agreement_id"]
+        quote = turn.data.get("quote") or (
+            turn.data.get("quotes", [{}])[0] if turn.data.get("quotes") else None
+        )
+        if isinstance(quote, dict) and quote.get("sku"):
+            entity["sku"] = quote["sku"]
+        return entity
 
     @staticmethod
     def _capture_kyc(session: Session, message: Message) -> None:

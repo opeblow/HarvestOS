@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import "./console.css";
 import {
-  type ConversationRow, type Dealer, type LoanHealth, type Stats,
-  fetchConversations, fetchDealers, fetchLoanHealth, fetchStats,
+  type ConversationRow, type Dealer, type LoanHealth, type NotificationPage, type Stats,
+  fetchConversations, fetchDealers, fetchLoanHealth, fetchNotifications, fetchStats,
+  markAllNotificationsRead, markNotificationRead,
 } from "@/lib/api";
 
 const money = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 });
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [loans, setLoans] = useState<LoanHealth | null>(null);
+  const [notifications, setNotifications] = useState<NotificationPage | null>(null);
   const [online, setOnline] = useState(false);
   const [updated, setUpdated] = useState<Date | null>(null);
   const [query, setQuery] = useState("");
@@ -23,13 +25,29 @@ export default function DashboardPage() {
     window.location.replace("/login");
   }
 
+  const unread = notifications?.unread ?? 0;
+
+  async function markAllRead() {
+    await markAllNotificationsRead();
+    const controller = new AbortController();
+    void refresh(controller.signal);
+  }
+
+  async function markRead(id: string) {
+    await markNotificationRead(id);
+    const controller = new AbortController();
+    void refresh(controller.signal);
+  }
+
   const refresh = useCallback(async (signal: AbortSignal) => {
     try {
-      const [nextStats, nextConversations, nextDealers, nextLoans] = await Promise.all([
+      const [nextStats, nextConversations, nextDealers, nextLoans, nextNotifications] = await Promise.all([
         fetchStats(signal), fetchConversations(50, signal), fetchDealers(signal), fetchLoanHealth(signal),
+        fetchNotifications(20, signal),
       ]);
       setStats(nextStats); setConversations(nextConversations); setDealers(nextDealers);
-      setLoans(nextLoans); setOnline(true); setUpdated(new Date());
+      setLoans(nextLoans); setNotifications(nextNotifications);
+      setOnline(true); setUpdated(new Date());
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError")) setOnline(false);
     }
@@ -64,7 +82,7 @@ export default function DashboardPage() {
       </aside>
 
       <main className="main-area" id="overview">
-        <header className="topbar"><div className="breadcrumbs">Workspace <span>/</span> <b>Overview</b></div><div className="top-actions"><span className={`connection ${online ? "is-online" : ""}`}><i />{online ? "Systems operational" : "API unavailable"}</span><button className="icon-button" aria-label="Notifications">♧<i /></button><button className="sign-out-button" onClick={signOut}>Sign out</button></div></header>
+        <header className="topbar"><div className="breadcrumbs">Workspace <span>/</span> <b>Overview</b></div><div className="top-actions"><span className={`connection ${online ? "is-online" : ""}`}><i />{online ? "Systems operational" : "API unavailable"}</span><button className="icon-button" aria-label={`Notifications (${unread} unread)`} title={`${unread} unread notifications`}>♧{unread > 0 && <i />}</button><button className="sign-out-button" onClick={signOut}>Sign out</button></div></header>
         <div className="content-wrap">
           <section className="page-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> FIELD OPERATIONS <span className="date-label">· {new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric" }).format(new Date())}</span></div><h1>Your network, in focus<span>.</span></h1><p className="lede">Here’s what’s happening across your farmer network.</p></div><button className="export-button" onClick={() => window.print()}><span>↓</span> Export report</button></section>
 
@@ -86,6 +104,27 @@ export default function DashboardPage() {
           <section className="lower-grid"><article className="panel conversation-panel" id="conversations"><div className="panel-heading conversation-heading"><div><p className="section-kicker">FARMER SUPPORT</p><h2>Recent conversations <span className="count-pill">{conversations.length}</span></h2></div><div className="table-actions"><label className="search-box"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a conversation" aria-label="Find a conversation"/><kbd>⌘ K</kbd></label><button className="filter-button">Filter <span>☷</span></button></div></div><div className="table-scroll"><table><thead><tr><th>FARMER</th><th>LAST MESSAGE</th><th>JOURNEY STAGE</th><th>CHANNELS</th><th>UPDATED</th></tr></thead><tbody>{filtered.slice(0, 8).map((row, index) => <tr key={`${row.phone}-${index}`}><td><div className="farmer-cell"><span className={`farmer-avatar avatar-${index % 4}`}>{["AB", "YK", "FM", "SA"][index % 4]}</span><span><b>{row.phone}</b><small>{row.diagnosis_issue || row.order_status || (row.has_loan ? "Payment plan active" : "Farmer network")}</small></span></div></td><td className="message-cell">{row.last_message || "Conversation started"}</td><td><Stage row={row}/></td><td><div className="channel-pills">{row.visited_channels.slice(0, 3).map((channel) => <span key={channel}>{channel}</span>)}</div></td><td className="time-cell">{relativeTime(row.last_ts)}</td></tr>)}{filtered.length === 0 && <tr><td colSpan={5}><div className="empty-state"><span>⌕</span><b>{query ? "No matching conversations" : "Your farmer network is ready"}</b><p>{query ? "Try another name, issue, or channel." : "New farmer conversations will appear here as they arrive."}</p></div></td></tr>}</tbody></table></div><div className="table-footer"><span>Showing <b>{Math.min(filtered.length, 8)}</b> of <b>{filtered.length}</b> conversations</span><a href="#conversations">View all conversations <span>→</span></a></div></article>
 
           <article className="panel dealer-panel" id="network"><div className="panel-heading"><div><p className="section-kicker">SUPPLY NETWORK</p><h2>Dealer partners <span className="count-pill">{dealers.length}</span></h2></div><button className="more-button" aria-label="More dealer options">···</button></div><div className="dealer-list">{dealers.slice(0, 5).map((dealer, index) => <div className="dealer-row" key={dealer.name}><span className={`dealer-mark dealer-${index % 4}`}>{dealer.name.slice(0, 1)}</span><span className="dealer-info"><b>{dealer.name}</b><small>{dealer.state} · {dealer.stock.length} stocked lines</small></span><span className="dealer-status"><i/> Active</span></div>)}{dealers.length === 0 && <div className="empty-state compact"><span>⌖</span><b>Dealer network is warming up</b><p>Verified local partners will show up here.</p></div>}</div><a className="dealer-link" href="#network">Explore dealer network <span>→</span></a></article></section>
+
+          <section className="panel notification-panel" id="notifications">
+            <div className="panel-heading">
+              <div><p className="section-kicker">IN-APP INBOX</p><h2>Notifications <span className="count-pill">{unread}</span></h2></div>
+              <button className="filter-button" onClick={markAllRead} disabled={unread === 0}>Mark all read</button>
+            </div>
+            <div className="notification-list">
+              {(notifications?.items ?? []).slice(0, 8).map((item) => (
+                <div className={`notification-row ${item.read_ts ? "" : "is-unread"}`} key={item.id}>
+                  <span className="notification-dot" />
+                  <div className="notification-copy">
+                    <b>{item.title}</b>
+                    <p>{item.body || "No details"}</p>
+                    <small>{item.category} · {item.channel} · {relativeTime(item.created_ts)}{item.delivered_externally ? ` · sent via ${item.external_provider}` : " · in-app"}</small>
+                  </div>
+                  {!item.read_ts && <button className="notification-read" onClick={() => markRead(item.id)}>Mark read</button>}
+                </div>
+              ))}
+              {(!notifications || notifications.items.length === 0) && <div className="empty-state compact"><span>♧</span><b>No notifications yet</b><p>Every farmer update is recorded here, even without external channels.</p></div>}
+            </div>
+          </section>
 
           <footer className="page-footer"><span>HARVESTOS <i>·</i> PARTNER OPERATIONS</span><span>{updated ? `Updated ${updated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Waiting for first sync"} <i className={online ? "footer-live" : ""}/></span></footer>
         </div>

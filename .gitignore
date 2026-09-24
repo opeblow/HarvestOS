@@ -20,6 +20,8 @@ __pycache__/
 venv/
 .coverage
 coverage.xml
+# Local asset storage (ASSET_STORAGE=local)
+.harvestos-assets/
 
 # Env & secrets — NEVER commit
 .env

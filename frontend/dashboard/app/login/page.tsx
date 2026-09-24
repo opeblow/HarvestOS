@@ -50,9 +50,9 @@ export default function LoginPage() {
         <div className="story-content">
           <p className="auth-eyebrow"><i /> PARTNER OPERATIONS</p>
           <h1>Better support<br />for every <em>growing</em><br />season.</h1>
-          <p className="story-copy">A connected view of the conversations, local supply, and payment plans moving through your farmer network.</p>
+          <p className="story-copy">A connected view of the conversations, local supply, and payment plans moving through your farmer network. The in-app inbox always works; SMS, WhatsApp, RCS and email are optional channels you enable when available.</p>
           <div className="story-journey" aria-label="Journey channels">
-            <span>SMS</span><i>→</i><span>WhatsApp</span><i>→</i><span>RCS</span><i>→</i><span>Email</span>
+            <span>In-app</span><i>→</i><span>SMS</span><i>→</i><span>WhatsApp</span><i>→</i><span>Email</span>
           </div>
         </div>
         <div className="auth-story-footer"><span>BUILT FOR THE PEOPLE BEHIND EVERY HARVEST</span><span>01 — PARTNER ACCESS</span></div>

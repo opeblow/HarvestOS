@@ -438,3 +438,43 @@ green; a chaos test (kill Bedrock temporarily) degrades gracefully.
   not a Q&A bot.
 - Security is take-it-for-granted: no leaked keys, least privilege, signed webhooks,
   encrypted-at-rest, budget alarm that actually fires.
+
+---
+
+## 15. Addendum — Core independence from optional AWS messaging (implemented)
+
+The plan above assumed SMS, WhatsApp, SES, and S3 were on the critical path. In the
+current environment those services are unavailable (EUM SMS/Social return
+`SubscriptionRequiredException`; SES is in the sandbox with no verified identity; no
+bucket has been deployed), so the core product was re-architected to run without them.
+The integrations remain first-class optional adapters.
+
+**What changed**
+
+- **Core notification inbox.** `app/notifications/` adds a `NotificationService` that
+  always persists every user-facing update to a durable in-app inbox, with category,
+  entity references, read state, and an optional external-delivery flag. The journey
+  service delivers through this service instead of the channel registry.
+- **Optional providers.** `EMAIL_PROVIDER`, `SMS_PROVIDER`, and `WHATSAPP_PROVIDER`
+  default to `disabled`; `NOTIFICATION_PROVIDER=in_app` is the only core value. A
+  disabled channel resolves to a `DisabledAdapter`/`DisabledNotificationProvider` that
+  raises a clear `ProviderError` rather than silently pretending delivery.
+- **Local asset storage.** `app/storage/` adds `AssetStorage` with a local default
+  (`.harvestos-assets/`, git-ignored) and an optional S3 adapter. Crop photos and
+  generated PDFs resolve through `local://` / `s3://` references.
+- **Startup validation.** `validate_settings()` validates core settings always and
+  optional providers only when enabled (`ses` → `SES_FROM_ADDRESS`, `eum` → origination
+  identity / phone number id, `s3` → `ASSET_BUCKET`), failing fast with `ConfigError`.
+- **API + dashboard.** `GET /api/notifications`, `POST /api/notifications/{id}/read`,
+  and `POST /api/notifications/read-all` back a console inbox and unread badge, proxied
+  through same-origin Next.js routes. `/healthz` reports the active providers.
+- **Infrastructure.** CDK always provisions DynamoDB + KMS, Fargate + ALB, the
+  CloudWatch dashboard, and the budget alarm. The S3 bucket and SES identity are created
+  only when `HARVESTOS_ENABLE_ASSET_BUCKET=true` / `HARVESTOS_ENABLE_EMAIL=true`.
+
+**What this means for the plan**
+
+- Steps that depend on EUM/SES/S3 remain valid but are gated behind provider
+  enablement; they are not required for the local or AWS-core journey.
+- Update the demo to lead with the in-app inbox and to state which optional adapters,
+  if any, are enabled in the environment being shown.

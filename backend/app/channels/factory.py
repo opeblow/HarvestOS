@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.channels.base import ChannelAdapter, LoggingAdapter
+from app.channels.base import ChannelAdapter, DisabledAdapter
 from app.channels.email import SESEmailAdapter
 from app.channels.sms_rcs import SmsRcsAdapter
 from app.channels.whatsapp import WhatsAppAdapter
@@ -8,13 +8,25 @@ from app.config import settings
 
 
 class ChannelRegistry:
-    def __init__(self) -> None:
-        aws = settings.storage_is_aws
-        self.sms: ChannelAdapter = SmsRcsAdapter() if aws else LoggingAdapter("sms")
-        self.whatsapp: ChannelAdapter = WhatsAppAdapter() if aws else LoggingAdapter("whatsapp")
-        self.email: ChannelAdapter = SESEmailAdapter() if aws else LoggingAdapter("email")
+    """Builds only the external adapters whose providers are explicitly enabled.
 
-    def dispatch(self, channel: str):
+    Disabled channels resolve to a :class:`DisabledAdapter` that fails with a
+    clear configuration error, so the core application never depends on an
+    unavailable provider and never silently pretends a message was delivered.
+    """
+
+    def __init__(self) -> None:
+        self.sms: ChannelAdapter = (
+            SmsRcsAdapter() if settings.sms_enabled else DisabledAdapter("sms")
+        )
+        self.whatsapp: ChannelAdapter = (
+            WhatsAppAdapter() if settings.whatsapp_enabled else DisabledAdapter("whatsapp")
+        )
+        self.email: ChannelAdapter = (
+            SESEmailAdapter() if settings.email_enabled else DisabledAdapter("email")
+        )
+
+    def dispatch(self, channel: str) -> ChannelAdapter:
         return {
             "sms": self.sms,
             "rcs": self.sms,
